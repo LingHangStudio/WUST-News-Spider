@@ -1,0 +1,5 @@
+# Editor
+.vscode/
+
+# NPM
+node_modules/
