@@ -1,0 +1,22 @@
+{
+  "name": "wust-news-spider",
+  "version": "1.0.0",
+  "description": "本项目为武科大助手新闻资讯的爬虫脚本项目，从武科大新闻官网爬取新闻，并存入数据库中。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@gitee.com:monkeyhbd/wust-news-spider.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "cheerio": "^1.0.0-rc.12",
+    "human-interval": "^2.0.1",
+    "mysql": "^2.18.1"
+  }
+}
