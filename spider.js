@@ -8,6 +8,9 @@ const agent = new https.Agent({
   rejectUnauthorized: false,
 }); //爬虫需要
 
+
+let date 
+
 async function spider(spider_url, part, sub) {
   let detail_url = [];
   let compare_url = [];
@@ -97,7 +100,7 @@ async function spider(spider_url, part, sub) {
     .then((res) => {
       const $ = cheerio.load(res.data);
 
-      $(".wp_article_list .Article_Title a").each((i, elem) => {
+      $(".col_news .Article_Title a").each((i, elem) => {
         //先获取对应的链接
         //总共20条数据
 
@@ -111,9 +114,12 @@ async function spider(spider_url, part, sub) {
         }
 
         let old_url = $(elem).attr("href");
-        let new_url = connect_url + old_url;
-
-        compare_url.push(new_url);
+        let new_url = ''
+        let RE = /^\//;
+          if (RE.test(old_url)) {
+              new_url = connect_url + old_url;
+              compare_url.push(new_url);
+          } 
       });
     });
 
@@ -2026,6 +2032,7 @@ async function spider_zihuan(spider_url, sub, name) {
 }
 
 
+
 setInterval(() => {
   spider("https://news.wust.edu.cn/58/list.htm", 1, 1); //学校要闻
 
@@ -2171,6 +2178,11 @@ spider_zihuan('https://cree.wust.edu.cn/1726/list.htm',2,'教学动态')
 spider_zihuan('https://cree.wust.edu.cn/1749/list.htm',3,'学工动态')
 spider_zihuan('https://cree.wust.edu.cn/1736/list.htm',4,'科研动态')
 
+date = new Date()
+
 }, humanInterval("1 hours"));
 
-module.exports = spider;
+
+
+
+module.exports = date;
