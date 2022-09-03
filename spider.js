@@ -10,8 +10,259 @@ const agent = new https.Agent({
 
 
 let date 
+date = new Date()
 
-async function spider(spider_url, part, sub) {
+async function spider_jiaowu(spider_url, part, sub) {
+  let detail_url = [];
+  let compare_url = [];
+  let re_news = /^https:\/\/news.wust.edu.cn/;
+  let re_wust = /^https:\/\/www.wust.edu.cn/;
+  let re_jwc = /^https:\/\/jwc.wust.edu.cn/;
+
+  function query(i) {
+    return new Promise((res) => {
+      db.query(
+        `SELECT * FROM my_data WHERE href = '${compare_url[i]}' `,
+        (err, results) => {
+          res(results);
+        }
+      );
+    });
+  }
+
+  function spider_detail() {
+    return new Promise((res) => {
+      // console.log(re);
+      for (let i = 0; i < detail_url.length; i++) {
+        axios
+          .get(detail_url[i], {
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+            },
+            httpsAgent: agent, //选择性忽略SSL
+          })
+          .then((res) => {
+            const $ = cheerio.load(res.data);
+            let time = $(".arti_update").text();
+            let title = $(".arti_title")
+            .text()
+            .replace(/[\r\n]/g, "")
+            .replace(/[ ]/g, "");
+            let text = $(".read").html();
+            // console.log(time);
+            db.query(
+              "INSERT INTO my_data (part,sub,data,title,time,href) VALUES (?,?,?,?,?,?)",
+              [part, sub, text, title, time, detail_url[i]]
+            );
+
+            //先存信息
+
+            $(".read img").each((index, elem) => {
+              let old_pic = $(elem).attr("src");
+              let new_pic = "";
+              let RE = /^\//;
+              if (RE.test(old_pic)) {
+                new_pic = "https://news.wust.edu.cn" + old_pic;
+              } else {
+                new_pic = old_pic;
+              }
+
+              db.query("INSERT INTO picture (picture_url,href) VALUES (?,?)", [
+                new_pic,
+                detail_url[i],
+              ]);
+            });
+
+            //爬取附件
+            $("img+a").each((index, elem) => {
+              let appendix_title = $(elem).text();
+              let appendix = "https://www.wust.edu.cn" + $(elem).attr("href");
+              db.query(
+                "INSERT INTO appendix (appendix,href,appendix_title) VALUES (?,?,?)",
+                [appendix, detail_url[i], appendix_title]
+              );
+            });
+
+            // console.log(new_pic);
+          });
+      }
+      console.log("詳細爬蟲結束");
+      res();
+    });
+  }
+
+  await axios
+    .get(spider_url, {
+      headers: {
+        "Content-Type": "application/json;charset=UTF-8",
+      },
+      httpsAgent: agent, //选择性忽略SSL
+    })
+    .then((res) => {
+      const $ = cheerio.load(res.data);
+
+      $("#wp_news_w82 .news_title a").each((i, elem) => {
+        //先获取对应的链接
+        //总共20条数据
+
+        let connect_url = "";
+        if (re_news.test(spider_url)) {
+          connect_url = "https://news.wust.edu.cn";
+        } else if (re_wust.test(spider_url)) {
+          connect_url = "https://www.wust.edu.cn";
+        } else if (re_jwc.test(spider_url)) {
+          connect_url = "https://jwc.wust.edu.cn";
+        }
+
+        let old_url = $(elem).attr("href");
+        let new_url = ''
+        let RE = /^\//;
+          if (RE.test(old_url)) {
+              new_url = connect_url + old_url;
+              compare_url.push(new_url);
+          } 
+      });
+    });
+
+  for (let i = 0; i < compare_url.length; i++) {
+    let re = await query(i);
+    if (!re.length) {
+      console.log("要保存");
+      detail_url.push(compare_url[i]);
+    } else {
+      console.log("不要保存");
+    }
+  }
+
+  await spider_detail();
+}
+
+async function spider_tuanwei(spider_url, part, sub) {
+  let detail_url = [];
+  let compare_url = [];
+  let re_news = /^https:\/\/news.wust.edu.cn/;
+  let re_wust = /^https:\/\/www.wust.edu.cn/;
+  let re_jwc = /^https:\/\/jwc.wust.edu.cn/;
+
+  function query(i) {
+    return new Promise((res) => {
+      db.query(
+        `SELECT * FROM my_data WHERE href = '${compare_url[i]}' `,
+        (err, results) => {
+          res(results);
+        }
+      );
+    });
+  }
+
+  function spider_detail() {
+    return new Promise((res) => {
+      // console.log(re);
+      for (let i = 0; i < detail_url.length; i++) {
+        axios
+          .get(detail_url[i], {
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+            },
+            httpsAgent: agent, //选择性忽略SSL
+          })
+          .then((res) => {
+            const $ = cheerio.load(res.data);
+            let time = $(".arti_update").text();
+            let title = $(".arti_title")
+              .text()
+              .replace(/[\r\n]/g, "")
+              .replace(/[ ]/g, "");
+            let text = $(".read").html();
+            // console.log(time);
+            db.query(
+              "INSERT INTO my_data (part,sub,data,title,time,href) VALUES (?,?,?,?,?,?)",
+              [part, sub, text, title, time, detail_url[i]]
+            );
+
+            //先存信息
+
+            $(".read img").each((index, elem) => {
+              let old_pic = $(elem).attr("src");
+              let new_pic = "";
+              let RE = /^\//;
+              if (RE.test(old_pic)) {
+                new_pic = "https://news.wust.edu.cn" + old_pic;
+              } else {
+                new_pic = old_pic;
+              }
+
+              db.query("INSERT INTO picture (picture_url,href) VALUES (?,?)", [
+                new_pic,
+                detail_url[i],
+              ]);
+            });
+
+            //爬取附件
+            $("img+a").each((index, elem) => {
+              let appendix_title = $(elem).text();
+              let appendix = "https://www.wust.edu.cn" + $(elem).attr("href");
+              db.query(
+                "INSERT INTO appendix (appendix,href,appendix_title) VALUES (?,?,?)",
+                [appendix, detail_url[i], appendix_title]
+              );
+            });
+
+            // console.log(new_pic);
+          });
+      }
+      console.log("詳細爬蟲結束");
+      res();
+    });
+  }
+
+  await axios
+    .get(spider_url, {
+      headers: {
+        "Content-Type": "application/json;charset=UTF-8",
+      },
+      httpsAgent: agent, //选择性忽略SSL
+    })
+    .then((res) => {
+      const $ = cheerio.load(res.data);
+
+      $(".col_news .Article_Title a").each((i, elem) => {
+        //先获取对应的链接
+        //总共20条数据
+
+        let connect_url = "";
+        if (re_news.test(spider_url)) {
+          connect_url = "https://news.wust.edu.cn";
+        } else if (re_wust.test(spider_url)) {
+          connect_url = "https://www.wust.edu.cn";
+        } else if (re_jwc.test(spider_url)) {
+          connect_url = "https://jwc.wust.edu.cn";
+        }
+
+        let old_url = $(elem).attr("href");
+        let new_url = ''
+        let RE = /^\//;
+          if (RE.test(old_url)) {
+              new_url = connect_url + old_url;
+              compare_url.push(new_url);
+          } 
+      });
+    });
+
+  for (let i = 0; i < compare_url.length; i++) {
+    let re = await query(i);
+    if (!re.length) {
+      console.log("要保存");
+      detail_url.push(compare_url[i]);
+    } else {
+      console.log("不要保存");
+    }
+  }
+
+  await spider_detail();
+}
+
+async function spider_guanwang(spider_url, part, sub) {
   let detail_url = [];
   let compare_url = [];
   let re_news = /^https:\/\/news.wust.edu.cn/;
@@ -100,7 +351,7 @@ async function spider(spider_url, part, sub) {
     .then((res) => {
       const $ = cheerio.load(res.data);
 
-      $(".col_news .Article_Title a").each((i, elem) => {
+      $(".wp_article_list .Article_Title a").each((i, elem) => {
         //先获取对应的链接
         //总共20条数据
 
@@ -2033,36 +2284,37 @@ async function spider_zihuan(spider_url, sub, name) {
 
 
 
+
 setInterval(() => {
-  spider("https://news.wust.edu.cn/58/list.htm", 1, 1); //学校要闻
+  spider_guanwang("https://news.wust.edu.cn/58/list.htm", 1, 1); //学校要闻
+  
+  spider_guanwang("https://news.wust.edu.cn/66/list.htm", 1, 2); //媒体科大
 
-  spider("https://news.wust.edu.cn/66/list.htm", 1, 2); //媒体科大
+  spider_guanwang("https://news.wust.edu.cn/61/list.htm", 1, 3); //学术动态
 
-  spider("https://news.wust.edu.cn/61/list.htm", 1, 3); //学术动态
+  spider_guanwang("https://news.wust.edu.cn/59/list.htm", 1, 4); //综合新闻
 
-  spider("https://news.wust.edu.cn/59/list.htm", 1, 4); //综合新闻
-
-  spider("https://news.wust.edu.cn/60/list.htm", 1, 5); //院系动态
+  spider_guanwang("https://news.wust.edu.cn/60/list.htm", 1, 5); //院系动态
 
   // ——————————————————————————————————————————————————————————————————————
 
-  spider("https://jwc.wust.edu.cn/1925/list1.htm", 2, 1); //教务处  通知
+  spider_jiaowu("https://jwc.wust.edu.cn/1925/list1.htm", 2, 1); //教务处  通知
 
-  spider("https://jwc.wust.edu.cn/1926/list.htm", 2, 2); //动态
+  spider_jiaowu("https://jwc.wust.edu.cn/1926/list.htm", 2, 2); //动态
 
   //———————————————————————————————————————————————————————————————————————
 
-  spider("https://www.wust.edu.cn/tw/353/list.htm", 4, 1); //团委  团情快报
+  spider_tuanwei("https://www.wust.edu.cn/tw/353/list.htm", 4, 1); //团委  团情快报
 
-  spider("https://www.wust.edu.cn/tw/356/list.htm", 4, 2); //基层信息
+  spider_tuanwei("https://www.wust.edu.cn/tw/356/list.htm", 4, 2); //基层信息
 
-  spider("https://www.wust.edu.cn/tw/355/list.htm", 4, 3); //文件资料
+  spider_tuanwei("https://www.wust.edu.cn/tw/355/list.htm", 4, 3); //文件资料
 
-  spider("https://www.wust.edu.cn/tw/359/list.htm", 4, 4); //学生活动
+  spider_tuanwei("https://www.wust.edu.cn/tw/359/list.htm", 4, 4); //学生活动
 
-  spider("https://www.wust.edu.cn/tw/360/list.htm", 4, 5); //热点聚焦
+  spider_tuanwei("https://www.wust.edu.cn/tw/360/list.htm", 4, 5); //热点聚焦
 
-  spider("https://www.wust.edu.cn/tw/361/list.htm", 4, 6); //他山之石
+  spider_tuanwei("https://www.wust.edu.cn/tw/361/list.htm", 4, 6); //他山之石
 
   //———————————————————————————————————————————————————————————————————————
 
@@ -2178,7 +2430,7 @@ spider_zihuan('https://cree.wust.edu.cn/1726/list.htm',2,'教学动态')
 spider_zihuan('https://cree.wust.edu.cn/1749/list.htm',3,'学工动态')
 spider_zihuan('https://cree.wust.edu.cn/1736/list.htm',4,'科研动态')
 
-date = new Date()
+console.log('爬虫更新完毕');
 
 }, humanInterval("1 hours"));
 
