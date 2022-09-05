@@ -6,7 +6,7 @@ function database() {
 		host: "127.0.0.1",
 		user: "root",
 		password: "admin123",
-		database: "lh_news",
+		database: "wust-news",
 		port:"3306"
 	})
 	return db
