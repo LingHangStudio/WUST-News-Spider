@@ -492,5 +492,8 @@ var list = {
 			cnName: "科研动态",
 			url: "https://cree.wust.edu.cn/1736/list.htm"
 		}
-	],
+	]
 }
+
+
+module.exports = list

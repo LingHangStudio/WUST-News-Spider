@@ -1,10 +1,10 @@
-const commonSpider = require('./common')
+const commonSpider = require('../common')
 
 
 
 async function launch(tb, part, sub, url) {
 	await commonSpider.launch(tb, part, sub, url, {
-		listSelector: '#wp_news_w82 .news_title a',
+		listSelector: '.col-news .Article_Title a',
 		titleSelector: '.arti_title',
 		timeSelector: '.arti_update',
 		textSelector: '.read',

@@ -1,8 +1,24 @@
 const axios = require("axios")
 const cheerio = require("cheerio")
 const database = require("../database")
-let https = require("https")
+const https = require("https")
+const path = require('path')
 
+
+// 判断路径类型是绝对路径、相对路径还是网络路径
+function pathType(pathString) {
+	if (path.isAbsolute(pathString)) {
+		return 'absolute'
+	}
+	else {
+		if (pathString.length >= 7 && pathString.slice(0, 7) == "http://" || pathString.length >= 8 && pathString.slice(0, 8) == "https://") {
+			return 'web'
+		}
+		else {
+			return 'relative'
+		}
+	}
+}
 
 
 // 查寻 href 的新闻的数组
@@ -26,12 +42,22 @@ async function readHtml(db, tb, environment, href, html) {
 	var timeSelector = environment.config.timeSelector
 	if (timeSelector == undefined) {timeSelector = '.arti_update'}
 	let time = $(timeSelector).text()
-	var targetStr = time.match(/[0-9]+-[0-9]+-[0-9]+/)[0]
-	var targetArr = targetStr.split(/-/)
-	var date = {
-		year: parseInt(targetArr[0]),
-		month: parseInt(targetArr[1]),
-		day: parseInt(targetArr[2])
+	var targetMatch = time.match(/[0-9]+-[0-9]+-[0-9]+/)
+	if (targetMatch != null) {
+		var targetStr = targetMatch[0]
+		var targetArr = targetStr.split(/-/)
+		var date = {
+			year: parseInt(targetArr[0]),
+			month: parseInt(targetArr[1]),
+			day: parseInt(targetArr[2])
+		}
+	}
+	else {
+		var date = {
+			year: 0,
+			month: 0,
+			day: 0
+		}
 	}
 
 	// 新闻标题
@@ -115,7 +141,12 @@ async function spideNews(db, tb, environment) {
 			httpsAgent: environment.agent
 		})
 		.then(async function(res) {
-			await readHtml(db, tb, environment, href, res.data)
+			try {
+				await readHtml(db, tb, environment, href, res.data)
+			}
+			catch(err) {
+				console.log(`${href} spide failed.`, err)
+			}
 		})
 	}
 }
@@ -132,34 +163,24 @@ async function spideContents(environment) {
 	})
 	.then(function(res) {
 		const $ = cheerio.load(res.data)
-	
 		
 		var listSelector = environment.config.listSelector
 		if (listSelector == undefined) {listSelector = '.wp_article_list .Article_Title a'}
 		$(listSelector).each(function(i, elem) {
-			//先获取对应的链接
-			//总共20条数据
-			let re_news = /^https:\/\/news.wust.edu.cn/
-			let re_wust = /^https:\/\/www.wust.edu.cn/
-			let re_jwc = /^https:\/\/jwc.wust.edu.cn/
-	
-			let connect_url = ""
-			if (re_news.test(environment.newsContents)) {
-				connect_url = "https://news.wust.edu.cn"
+			var hrefUrl = $(elem).attr("href")
+			var hrefUrlType = pathType(hrefUrl)
+			var newsUrl = ''
+			if (hrefUrlType == 'web') {
+				// 可能跳转到其他网站，所以不爬取
+				newsUrl = ''
 			}
-			else if (re_wust.test(environment.newsContents)) {
-				connect_url = "https://www.wust.edu.cn"
-			}
-			else if (re_jwc.test(environment.newsContents)) {
-				connect_url = "https://jwc.wust.edu.cn"
+			else if (hrefUrlType == 'absolute') {
+				var baseUrl = environment.newsContents.match(/http[a-zA-Z.:\/]+/)[0]
+				newsUrl = baseUrl.concat(hrefUrl.slice(1))
 			}
 
-			let old_url = $(elem).attr("href")
-			let new_url = ''
-			let RE = /^\//
-			if (RE.test(old_url)) {
-				new_url = connect_url + old_url
-				environment.allNews.push(new_url)
+			if (newsUrl != '' && path.extname(newsUrl) == '.htm') {
+				environment.allNews.push(newsUrl)
 			}
 		})
 	})
@@ -215,14 +236,19 @@ async function launch(tb, part, sub, url, config={
 	// 如果表不存在则创建
 	await database.createTableIfNotExist(db, tb)
 
-	// 爬取新闻目录页面，把新闻 URL 追加到 environment.allNews 列表中
-	await spideContents(environment)
+	try {
+		// 爬取新闻目录页面，把新闻 URL 追加到 environment.allNews 列表中
+		await spideContents(environment)
 
-	// 对照数据库判断哪些是新的新闻需要爬取
-	await compareNews(db, tb, environment)
-	
-	// 爬取 environment.spideNews 中的新闻
-	await spideNews(db, tb, environment)
+		// 对照数据库判断哪些是新的新闻需要爬取
+		await compareNews(db, tb, environment)
+		
+		// 爬取 environment.spideNews 中的新闻
+		await spideNews(db, tb, environment)
+	}
+	catch(err) {
+		console.log('Task spide failed.', err)
+	}
 
 	// 断开数据库连接
 	db.end()
