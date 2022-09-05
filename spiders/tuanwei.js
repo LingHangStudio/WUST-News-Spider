@@ -4,8 +4,8 @@ const commonSpider = require('./common')
 
 async function launch(tb, part, sub, url) {
 	await commonSpider.launch(tb, part, sub, url, {
-		listSelector: '.wp_article_list .Article_Title a',
-		titleSelector: '.bt',
+		listSelector: '.col_news .Article_Title a',
+		titleSelector: '.arti_title',
 		timeSeletor: '.arti_update',
 		textSelector: '.read',
 		imgSelector: '.read img',

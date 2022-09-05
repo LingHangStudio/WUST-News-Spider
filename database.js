@@ -35,7 +35,7 @@ async function createTableIfNotExist(db, tb) {
 			part INT,
 			sub INT,
 			data MEDIUMTEXT,
-			title TINYTEXT,
+			title MEDIUMTEXT,
 			time TINYTEXT,
 			href TINYTEXT,
 			other MEDIUMTEXT,
