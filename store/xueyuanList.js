@@ -488,7 +488,7 @@ var list = {
 		{
 			house: 1,
 			sub: 4,
-			name: "keyandongtaii",
+			name: "keyandongtai",
 			cnName: "科研动态",
 			url: "https://cree.wust.edu.cn/1736/list.htm"
 		}
