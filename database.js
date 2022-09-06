@@ -1,14 +1,24 @@
 const mysql = require('mysql')
 
 
-function database() {
-	const db = mysql.createPool({
+var databaseConfig = {}
+try {
+	databaseConfig = require('./config/database.js')
+}
+catch(err) {
+	console.log('Database config not exist, use default.')
+	databaseConfig = {
 		host: "127.0.0.1",
 		user: "root",
 		password: "admin123",
 		database: "wust-news",
 		port:"3306"
-	})
+	}
+}
+
+
+function database() {
+	const db = mysql.createPool(databaseConfig)
 	return db
 }
 
