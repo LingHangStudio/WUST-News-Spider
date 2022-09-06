@@ -3,6 +3,7 @@ const mysql = require('mysql')
 
 var databaseConfig = {}
 try {
+	console.log('Use database config file ./config/database.js.')
 	databaseConfig = require('./config/database.js')
 }
 catch(err) {
