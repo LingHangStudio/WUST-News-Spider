@@ -16,7 +16,6 @@
   "dependencies": {
     "axios": "^0.27.2",
     "cheerio": "^1.0.0-rc.12",
-    "human-interval": "^2.0.1",
-    "mysql": "^2.18.1"
+    "mysql2": "^3.3.1"
   }
 }

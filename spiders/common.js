@@ -3,6 +3,10 @@ const cheerio = require("cheerio")
 const database = require("../database")
 const https = require("https")
 const path = require('path')
+const NodeUrl = require('node:url')
+
+
+axios.default.defaults.timeout = 5000
 
 
 // 判断路径类型是绝对路径、相对路径还是网络路径
@@ -34,6 +38,24 @@ async function queryNews(db, tb, href) {
 }
 
 
+function subAssetUrl(currentUrl, assetUrl) {
+	var assetUrlType = pathType(assetUrl)
+	if (assetUrlType == 'web') {
+		return assetUrl
+	}
+	else if (assetUrlType == 'absolute') {
+		var urlObj = new NodeUrl.URL(currentUrl)
+		urlObj.pathname = assetUrl
+		return decodeURIComponent(urlObj.toString())
+	}
+	else if (assetUrlType == 'relative') {
+		var urlObj = new NodeUrl.URL(currentUrl)
+		urlObj.pathname = path.join(path.dirname(urlObj.pathname), assetUrl)
+		return decodeURIComponent(urlObj.toString())
+	}
+}
+
+
 // 读取新闻 HTML ，并写入数据库
 async function readHtml(db, tb, environment, href, html) {
 	const $ = cheerio.load(html)
@@ -42,10 +64,10 @@ async function readHtml(db, tb, environment, href, html) {
 	var timeSelector = environment.config.timeSelector
 	if (timeSelector == undefined) {timeSelector = '.arti_update'}
 	let time = $(timeSelector).text()
-	var targetMatch = time.match(/[0-9]+-[0-9]+-[0-9]+/)
+	var targetMatch = time.match(/[0-9]+-[0-9]+-[0-9]+/) || time.match(/[0-9]+年[0-9]+月[0-9]+日/)
 	if (targetMatch != null) {
 		var targetStr = targetMatch[0]
-		var targetArr = targetStr.split(/-/)
+		var targetArr = targetStr.split(/[-年月日]/)
 		var date = {
 			year: parseInt(targetArr[0]),
 			month: parseInt(targetArr[1]),
@@ -84,14 +106,7 @@ async function readHtml(db, tb, environment, href, html) {
 	if (imgSelector == undefined) {imgSelector = '.read img'}
 	$(imgSelector).each(function(index, elem) {
 		let old_pic = $(elem).attr("src");
-		let new_pic = ""
-		let RE = /^\//
-		if (RE.test(old_pic)) {
-			new_pic = "https://news.wust.edu.cn" + old_pic
-		}
-		else {
-			new_pic = old_pic
-		}
+		let new_pic = subAssetUrl(href, old_pic)
 
 		other.picList.push(new_pic)
 	})
@@ -148,6 +163,11 @@ async function spideNews(db, tb, environment) {
 				console.log(`${href} spide failed.`, err)
 			}
 		})
+		// await new Promise(function(resolve) {
+		// 	setTimeout(function() {
+		// 		resolve()
+		// 	}, 1000)
+		// })
 	}
 }
 
@@ -177,6 +197,9 @@ async function spideContents(environment) {
 			else if (hrefUrlType == 'absolute') {
 				var baseUrl = environment.newsContents.match(/http[a-zA-Z.:\/]+/)[0]
 				newsUrl = baseUrl.concat(hrefUrl.slice(1))
+			}
+			else if (hrefUrlType == 'relative') {
+				newsUrl = subAssetUrl(environment.newsContents, hrefUrl)
 			}
 
 			if (newsUrl != '' && path.extname(newsUrl) == '.htm') {
