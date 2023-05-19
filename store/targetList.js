@@ -37,13 +37,13 @@ var list = {
 			part: 2,
 			sub: 1,
 			name: "tongzhigonggao",
-			url: "https://jwc.wust.edu.cn/1925/list1.htm"
+			url: "https://jwc.wust.edu.cn/tzgg.htm"
 		},
 		{  // 教学动态
 			part: 2,
 			sub: 2,
 			name: "jiaoxuedongtai",
-			url: "https://jwc.wust.edu.cn/1926/list.htm"
+			url: "https://jwc.wust.edu.cn/jyjxdt.htm"
 		}
 	],
 
